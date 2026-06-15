@@ -8,6 +8,9 @@ import type {
 } from 'storefrontapi.generated';
 import {ProductItem} from '~/components/ProductItem';
 import {MockShopNotice} from '~/components/MockShopNotice';
+import {Slideshow} from '~/components/Slideshow';
+
+import {GET_CAROUSEL_QUERY} from '~/graphql/metaobject/HomepageCarousel';
 
 export const meta: Route.MetaFunction = () => {
   return [{title: 'Hydrogen | Home'}];
@@ -28,14 +31,20 @@ export async function loader(args: Route.LoaderArgs) {
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
 async function loadCriticalData({context}: Route.LoaderArgs) {
-  const [{collections}] = await Promise.all([
+  const [{collections}, carouselResult] = await Promise.all([
     context.storefront.query(FEATURED_COLLECTION_QUERY),
-    // Add other queries here, so that they are loaded in parallel
+    context.storefront.query(GET_CAROUSEL_QUERY, {
+      variables: {
+        handle: 'homepage-carousel-eekzlxh4', // <-- Pastikan handle ini sesuai di Shopify Admin
+        type: 'homepage_carousel', // <-- Pastikan type ini sesuai di Shopify Admin
+      },
+    }),
   ]);
 
   return {
     isShopLinked: Boolean(context.env.PUBLIC_STORE_DOMAIN),
     featuredCollection: collections.nodes[0],
+    carouselData: carouselResult.metaobject,
   };
 }
 
@@ -62,6 +71,7 @@ export default function Homepage() {
   const data = useLoaderData<typeof loader>();
   return (
     <div className="home">
+      <Slideshow carouselData={data.carouselData} />
       {data.isShopLinked ? null : <MockShopNotice />}
       <FeaturedCollection collection={data.featuredCollection} />
       <RecommendedProducts products={data.recommendedProducts} />

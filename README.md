@@ -1,3 +1,8 @@
+# ENV
+
+PUBLIC_STOREFRONT_API_TOKEN=f8a115b4fba816fb6b076785b1a5ba0b
+PUBLIC_STORE_DOMAIN=yourgleezed.myshopify.com
+
 # Hydrogen template: Skeleton
 
 Hydrogen is Shopify’s stack for headless commerce. Hydrogen is designed to dovetail with [Remix](https://remix.run/), Shopify’s full stack web framework. This template contains a **minimal setup** of components, queries and tooling to get started with Hydrogen.
