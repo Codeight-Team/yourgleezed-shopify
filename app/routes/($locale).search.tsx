@@ -1,8 +1,13 @@
 import {useLoaderData} from 'react-router';
 import type {Route} from './+types/search';
 import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
+
 import {SearchForm} from '~/components/SearchForm';
 import {SearchResults} from '~/components/SearchResults';
+import {Container} from '~/components/Container';
+import {Input} from '~/components/ui/input';
+import {Button} from '~/components/ui/button';
+import {buildMeta} from '~/lib/seo';
 import {
   type RegularSearchReturn,
   type PredictiveSearchReturn,
@@ -14,7 +19,7 @@ import type {
 } from 'storefrontapi.generated';
 
 export const meta: Route.MetaFunction = () => {
-  return [{title: `Hydrogen | Search`}];
+  return buildMeta({title: 'Search', noindex: true});
 };
 
 export async function loader({request, context}: Route.LoaderArgs) {
@@ -41,24 +46,29 @@ export default function SearchPage() {
   if (type === 'predictive') return null;
 
   return (
-    <div className="search">
-      <h1>Search</h1>
-      <SearchForm>
+    <Container className="py-10 lg:py-16">
+      <h1 className="mb-6 text-[length:var(--text-title)] leading-[var(--text-title--line-height)] font-semibold tracking-[var(--text-title--letter-spacing)]">
+        Search
+      </h1>
+      <SearchForm className="mb-10 flex max-w-xl gap-2">
         {({inputRef}) => (
           <>
-            <input
+            <Input
               defaultValue={term}
               name="q"
-              placeholder="Search…"
+              placeholder="Search products, collections…"
               ref={inputRef}
               type="search"
+              className="h-12 flex-1 rounded-full px-5"
+              aria-label="Search"
             />
-            &nbsp;
-            <button type="submit">Search</button>
+            <Button type="submit" size="lg" className="h-12 rounded-full px-6">
+              Search
+            </Button>
           </>
         )}
       </SearchForm>
-      {error && <p style={{color: 'red'}}>{error}</p>}
+      {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
       {!term || !result?.total ? (
         <SearchResults.Empty />
       ) : (
@@ -73,7 +83,7 @@ export default function SearchPage() {
         </SearchResults>
       )}
       <Analytics.SearchView data={{searchTerm: term, searchResults: result}} />
-    </div>
+    </Container>
   );
 }
 

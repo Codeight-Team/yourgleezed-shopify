@@ -2,10 +2,15 @@ import {
   createContext,
   type ReactNode,
   useContext,
-  useEffect,
   useState,
 } from 'react';
-import {useId} from 'react';
+
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '~/components/ui/sheet';
 
 type AsideType = 'search' | 'cart' | 'mobile' | 'closed';
 type AsideContextValue = {
@@ -14,67 +19,45 @@ type AsideContextValue = {
   close: () => void;
 };
 
+const AsideContext = createContext<AsideContextValue | null>(null);
+
 /**
- * A side bar component with Overlay
+ * A premium slide-over panel built on the shadcn Sheet (Radix Dialog).
+ * Keeps the original `useAside` context API so existing callers
+ * (header, cart, search, mobile menu) continue to work unchanged.
+ *
  * @example
- * ```jsx
- * <Aside type="search" heading="SEARCH">
- *  <input type="search" />
- *  ...
- * </Aside>
- * ```
+ * <Aside type="cart" heading="Cart">...</Aside>
  */
 export function Aside({
   children,
   heading,
   type,
+  side = 'right',
 }: {
-  children?: React.ReactNode;
+  children?: ReactNode;
   type: AsideType;
-  heading: React.ReactNode;
+  heading: ReactNode;
+  side?: 'left' | 'right';
 }) {
   const {type: activeType, close} = useAside();
   const expanded = type === activeType;
-  const id = useId();
-  useEffect(() => {
-    const abortController = new AbortController();
-
-    if (expanded) {
-      document.addEventListener(
-        'keydown',
-        function handler(event: KeyboardEvent) {
-          if (event.key === 'Escape') {
-            close();
-          }
-        },
-        {signal: abortController.signal},
-      );
-    }
-    return () => abortController.abort();
-  }, [close, expanded]);
 
   return (
-    <div
-      aria-modal
-      className={`overlay ${expanded ? 'expanded' : ''}`}
-      role="dialog"
-      aria-labelledby={id}
-    >
-      <button className="close-outside" onClick={close} />
-      <aside>
-        <header>
-          <h3 id={id}>{heading}</h3>
-          <button className="close reset" onClick={close} aria-label="Close">
-            &times;
-          </button>
-        </header>
-        <main>{children}</main>
-      </aside>
-    </div>
+    <Sheet open={expanded} onOpenChange={(open) => (open ? null : close())}>
+      <SheetContent
+        side={side}
+        className="w-full sm:max-w-md"
+        aria-describedby={undefined}
+      >
+        <SheetHeader>
+          <SheetTitle>{heading}</SheetTitle>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+      </SheetContent>
+    </Sheet>
   );
 }
-
-const AsideContext = createContext<AsideContextValue | null>(null);
 
 Aside.Provider = function AsideProvider({children}: {children: ReactNode}) {
   const [type, setType] = useState<AsideType>('closed');

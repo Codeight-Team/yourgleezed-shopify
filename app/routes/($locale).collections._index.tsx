@@ -1,16 +1,24 @@
-import {useLoaderData, Link} from 'react-router';
+import {useLoaderData} from 'react-router';
 import type {Route} from './+types/collections._index';
-import {getPaginationVariables, Image} from '@shopify/hydrogen';
+import {getPaginationVariables} from '@shopify/hydrogen';
 import type {CollectionFragment} from 'storefrontapi.generated';
+
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
+import {CollectionCard} from '~/components/CollectionCard';
+import {Container} from '~/components/Container';
+import {buildMeta} from '~/lib/seo';
+
+export const meta: Route.MetaFunction = () => {
+  return buildMeta({
+    title: 'Collections',
+    description: 'Browse all collections.',
+    url: '/collections',
+  });
+};
 
 export async function loader(args: Route.LoaderArgs) {
-  // Start fetching non-critical data without blocking time to first byte
   const deferredData = loadDeferredData(args);
-
-  // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
-
   return {...deferredData, ...criticalData};
 }
 
@@ -20,14 +28,13 @@ export async function loader(args: Route.LoaderArgs) {
  */
 async function loadCriticalData({context, request}: Route.LoaderArgs) {
   const paginationVariables = getPaginationVariables(request, {
-    pageBy: 4,
+    pageBy: 8,
   });
 
   const [{collections}] = await Promise.all([
     context.storefront.query(COLLECTIONS_QUERY, {
       variables: paginationVariables,
     }),
-    // Add other queries here, so that they are loaded in parallel
   ]);
 
   return {collections};
@@ -46,49 +53,29 @@ export default function Collections() {
   const {collections} = useLoaderData<typeof loader>();
 
   return (
-    <div className="collections">
-      <h1>Collections</h1>
+    <Container className="py-10 lg:py-16">
+      <header className="mb-10 flex flex-col gap-4 border-b border-border pb-10">
+        <span className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+          Explore
+        </span>
+        <h1 className="text-[length:var(--text-headline)] leading-[var(--text-headline--line-height)] font-semibold tracking-[var(--text-headline--letter-spacing)]">
+          Collections
+        </h1>
+      </header>
+
       <PaginatedResourceSection<CollectionFragment>
         connection={collections}
-        resourcesClassName="collections-grid"
+        resourcesClassName="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3"
       >
         {({node: collection, index}) => (
-          <CollectionItem
+          <CollectionCard
             key={collection.id}
             collection={collection}
-            index={index}
+            loading={index < 3 ? 'eager' : 'lazy'}
           />
         )}
       </PaginatedResourceSection>
-    </div>
-  );
-}
-
-function CollectionItem({
-  collection,
-  index,
-}: {
-  collection: CollectionFragment;
-  index: number;
-}) {
-  return (
-    <Link
-      className="collection-item"
-      key={collection.id}
-      to={`/collections/${collection.handle}`}
-      prefetch="intent"
-    >
-      {collection?.image && (
-        <Image
-          alt={collection.image.altText || collection.title}
-          aspectRatio="1/1"
-          data={collection.image}
-          loading={index < 3 ? 'eager' : undefined}
-          sizes="(min-width: 45em) 400px, 100vw"
-        />
-      )}
-      <h5>{collection.title}</h5>
-    </Link>
+    </Container>
   );
 }
 

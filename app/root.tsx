@@ -17,9 +17,18 @@ import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from './components/PageLayout';
-import stylesheet from '~/styles/app.css?url';
+import {buildMeta, organizationJsonLd, websiteJsonLd} from '~/lib/seo';
+import {BRAND} from '~/lib/constants';
 
 export type RootLoader = typeof loader;
+
+/** Site-wide default metadata; route-level `meta` exports override these. */
+export const meta: Route.MetaFunction = () => {
+  return buildMeta({
+    title: `${BRAND.name} | ${BRAND.tagline}`,
+    description: BRAND.description,
+  });
+};
 
 /**
  * This is important to avoid re-fetching root queries on sub-navigations
@@ -64,7 +73,6 @@ export function links() {
       href: 'https://shop.app',
     },
     {rel: 'icon', type: 'image/svg+xml', href: favicon},
-    {rel: 'stylesheet', href: stylesheet},
   ];
 }
 
@@ -81,6 +89,10 @@ export async function loader(args: Route.LoaderArgs) {
     ...deferredData,
     ...criticalData,
     publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
+    siteUrl: env.PUBLIC_STORE_DOMAIN
+      ? `https://${env.PUBLIC_STORE_DOMAIN}`
+      : '',
+    language: storefront.i18n.language,
     shop: getShopAnalytics({
       storefront,
       publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
@@ -146,12 +158,18 @@ function loadDeferredData({context}: Route.LoaderArgs) {
 
 export function Layout({children}: {children?: React.ReactNode}) {
   const nonce = useNonce();
+  const data = useRouteLoaderData<RootLoader>('root');
+  const lang = data?.language ? data.language.toLowerCase() : 'en';
 
   return (
-    <html lang="en">
+    <html lang={lang}>
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        <meta name="theme-color" content="#ffffff" />
         <link rel="stylesheet" href={tailwindCss}></link>
         <link rel="stylesheet" href={resetStyles}></link>
         <link rel="stylesheet" href={appStyles}></link>
@@ -159,6 +177,12 @@ export function Layout({children}: {children?: React.ReactNode}) {
         <Links />
       </head>
       <body>
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg focus:ring-2 focus:ring-ring"
+        >
+          Skip to content
+        </a>
         {children}
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
@@ -169,6 +193,7 @@ export function Layout({children}: {children?: React.ReactNode}) {
 
 export default function App() {
   const data = useRouteLoaderData<RootLoader>('root');
+  const nonce = useNonce();
 
   if (!data) {
     return <Outlet />;
@@ -180,6 +205,18 @@ export default function App() {
       shop={data.shop}
       consent={data.consent}
     >
+      {data.siteUrl && (
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([
+              organizationJsonLd(data.siteUrl),
+              websiteJsonLd(data.siteUrl),
+            ]),
+          }}
+        />
+      )}
       <PageLayout {...data}>
         <Outlet />
       </PageLayout>

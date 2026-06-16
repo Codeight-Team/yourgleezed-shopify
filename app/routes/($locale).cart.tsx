@@ -2,10 +2,13 @@ import {useLoaderData, data, type HeadersFunction} from 'react-router';
 import type {Route} from './+types/cart';
 import type {CartQueryDataReturn} from '@shopify/hydrogen';
 import {CartForm} from '@shopify/hydrogen';
+
 import {CartMain} from '~/components/CartMain';
+import {Container} from '~/components/Container';
+import {buildMeta} from '~/lib/seo';
 
 export const meta: Route.MetaFunction = () => {
-  return [{title: `Hydrogen | Cart`}];
+  return buildMeta({title: 'Cart', noindex: true});
 };
 
 export const headers: HeadersFunction = ({actionHeaders}) => actionHeaders;
@@ -105,9 +108,11 @@ export default function Cart() {
   const cart = useLoaderData<typeof loader>();
 
   return (
-    <div className="cart">
-      <h1>Cart</h1>
+    <Container className="py-10 lg:py-16">
+      <h1 className="mb-8 text-[length:var(--text-title)] leading-[var(--text-title--line-height)] font-semibold tracking-[var(--text-title--letter-spacing)]">
+        Cart
+      </h1>
       <CartMain layout="page" cart={cart} />
-    </div>
+    </Container>
   );
 }

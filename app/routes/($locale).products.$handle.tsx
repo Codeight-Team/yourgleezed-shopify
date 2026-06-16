@@ -8,19 +8,34 @@ import {
   getAdjacentAndFirstAvailableVariants,
   useSelectedOptionInUrlParam,
 } from '@shopify/hydrogen';
-import {ProductPrice} from '~/components/ProductPrice';
+
+import {Price} from '~/components/Price';
 import {ProductImage} from '~/components/ProductImage';
+import {ProductGallery, type GalleryImage} from '~/components/ProductGallery';
 import {ProductForm} from '~/components/ProductForm';
+import {Container} from '~/components/Container';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '~/components/ui/accordion';
+import {Badge} from '~/components/ui/badge';
+import {SeoJsonLd} from '~/components/SeoJsonLd';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import {buildMeta, productJsonLd, breadcrumbJsonLd} from '~/lib/seo';
 
 export const meta: Route.MetaFunction = ({data}) => {
-  return [
-    {title: `Hydrogen | ${data?.product.title ?? ''}`},
-    {
-      rel: 'canonical',
-      href: `/products/${data?.product.handle}`,
-    },
-  ];
+  const product = data?.product;
+  return buildMeta({
+    title: product?.seo?.title || product?.title,
+    description:
+      product?.seo?.description ||
+      product?.description?.slice(0, 160),
+    url: product ? `/products/${product.handle}` : undefined,
+    image: product?.selectedOrFirstAvailableVariant?.image?.url,
+    type: 'product',
+  });
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -95,31 +110,101 @@ export default function Product() {
     selectedOrFirstAvailableVariant: selectedVariant,
   });
 
-  const {title, descriptionHtml} = product;
+  const {title, descriptionHtml, description, vendor} = product;
+  const price = selectedVariant?.price;
+  const compareAtPrice = selectedVariant?.compareAtPrice;
+  const onSale =
+    compareAtPrice &&
+    price &&
+    Number(compareAtPrice.amount) > Number(price.amount);
+
+  // Build the gallery from product media, falling back to the variant image.
+  const galleryImages: GalleryImage[] =
+    product.images?.nodes?.length
+      ? product.images.nodes
+      : selectedVariant?.image
+        ? [selectedVariant.image]
+        : [];
 
   return (
-    <div className="product">
-      <ProductImage image={selectedVariant?.image} />
-      <div className="product-main">
-        <h1>{title}</h1>
-        <ProductPrice
-          price={selectedVariant?.price}
-          compareAtPrice={selectedVariant?.compareAtPrice}
-        />
-        <br />
-        <ProductForm
-          productOptions={productOptions}
-          selectedVariant={selectedVariant}
-        />
-        <br />
-        <br />
-        <p>
-          <strong>Description</strong>
-        </p>
-        <br />
-        <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
-        <br />
+    <Container className="py-10 lg:py-16">
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+        {galleryImages.length > 0 ? (
+          <ProductGallery images={galleryImages} title={title} />
+        ) : (
+          <ProductImage image={selectedVariant?.image} />
+        )}
+
+        <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
+          <div className="flex flex-col gap-3">
+            {vendor && (
+              <span className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+                {vendor}
+              </span>
+            )}
+            <h1 className="text-[length:var(--text-title)] leading-[var(--text-title--line-height)] font-semibold tracking-[var(--text-title--letter-spacing)]">
+              {title}
+            </h1>
+            <div className="flex items-center gap-3">
+              <Price price={price} compareAtPrice={compareAtPrice} size="lg" />
+              {onSale && <Badge variant="destructive">Sale</Badge>}
+            </div>
+          </div>
+
+          <ProductForm
+            productOptions={productOptions}
+            selectedVariant={selectedVariant}
+          />
+
+          {description && (
+            <Accordion
+              type="single"
+              collapsible
+              defaultValue="description"
+              className="w-full"
+            >
+              <AccordionItem value="description">
+                <AccordionTrigger>Description</AccordionTrigger>
+                <AccordionContent>
+                  <div
+                    className="prose prose-sm max-w-none text-muted-foreground"
+                    dangerouslySetInnerHTML={{__html: descriptionHtml}}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="shipping">
+                <AccordionTrigger>Shipping &amp; returns</AccordionTrigger>
+                <AccordionContent>
+                  Free standard shipping on orders over $75. Easy 30-day
+                  returns on all unworn items.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
+        </div>
       </div>
+
+      <SeoJsonLd
+        data={[
+          productJsonLd({
+            name: title,
+            description: description ?? undefined,
+            image: selectedVariant?.image?.url,
+            url: `/products/${product.handle}`,
+            brand: vendor || undefined,
+            sku: selectedVariant?.sku ?? undefined,
+            price: price?.amount,
+            currency: price?.currencyCode,
+            availability: selectedVariant?.availableForSale,
+          }),
+          breadcrumbJsonLd([
+            {name: 'Home', url: '/'},
+            {name: 'Products', url: '/collections/all'},
+            {name: title, url: `/products/${product.handle}`},
+          ]),
+        ]}
+      />
+
       <Analytics.ProductView
         data={{
           products: [
@@ -135,7 +220,7 @@ export default function Product() {
           ],
         }}
       />
-    </div>
+    </Container>
   );
 }
 
@@ -186,6 +271,15 @@ const PRODUCT_FRAGMENT = `#graphql
     description
     encodedVariantExistence
     encodedVariantAvailability
+    images(first: 8) {
+      nodes {
+        id
+        url
+        altText
+        width
+        height
+      }
+    }
     options {
       name
       optionValues {

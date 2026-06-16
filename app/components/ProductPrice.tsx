@@ -1,6 +1,10 @@
-import {Money} from '@shopify/hydrogen';
 import type {MoneyV2} from '@shopify/hydrogen/storefront-api-types';
 
+import {Price} from '~/components/Price';
+
+/**
+ * Backwards-compatible wrapper around the shared {@link Price} component.
+ */
 export function ProductPrice({
   price,
   compareAtPrice,
@@ -8,20 +12,5 @@ export function ProductPrice({
   price?: MoneyV2;
   compareAtPrice?: MoneyV2 | null;
 }) {
-  return (
-    <div aria-label="Price" className="product-price" role="group">
-      {compareAtPrice ? (
-        <div className="product-price-on-sale">
-          {price ? <Money data={price} /> : null}
-          <s>
-            <Money data={compareAtPrice} />
-          </s>
-        </div>
-      ) : price ? (
-        <Money data={price} />
-      ) : (
-        <span>&nbsp;</span>
-      )}
-    </div>
-  );
+  return <Price price={price} compareAtPrice={compareAtPrice} />;
 }

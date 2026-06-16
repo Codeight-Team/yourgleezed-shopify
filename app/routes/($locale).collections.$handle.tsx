@@ -1,13 +1,23 @@
 import {redirect, useLoaderData} from 'react-router';
 import type {Route} from './+types/collections.$handle';
 import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
-import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
-import {redirectIfHandleIsLocalized} from '~/lib/redirect';
-import {ProductItem} from '~/components/ProductItem';
 import type {ProductItemFragment} from 'storefrontapi.generated';
 
+import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
+import {ProductCard} from '~/components/ProductCard';
+import {Container} from '~/components/Container';
+import {SeoJsonLd} from '~/components/SeoJsonLd';
+import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import {buildMeta, breadcrumbJsonLd} from '~/lib/seo';
+
 export const meta: Route.MetaFunction = ({data}) => {
-  return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
+  const collection = data?.collection;
+  return buildMeta({
+    title: collection?.seo?.title || collection?.title,
+    description: collection?.seo?.description || collection?.description,
+    url: collection ? `/collections/${collection.handle}` : undefined,
+    image: collection?.image?.url,
+  });
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -69,21 +79,37 @@ export default function Collection() {
   const {collection} = useLoaderData<typeof loader>();
 
   return (
-    <div className="collection">
-      <h1>{collection.title}</h1>
-      <p className="collection-description">{collection.description}</p>
+    <Container className="py-10 lg:py-16">
+      <header className="mb-10 flex flex-col gap-4 border-b border-border pb-10">
+        <h1 className="text-[length:var(--text-headline)] leading-[var(--text-headline--line-height)] font-semibold tracking-[var(--text-headline--letter-spacing)]">
+          {collection.title}
+        </h1>
+        {collection.description && (
+          <p className="max-w-2xl text-base text-muted-foreground">
+            {collection.description}
+          </p>
+        )}
+      </header>
+
       <PaginatedResourceSection<ProductItemFragment>
         connection={collection.products}
-        resourcesClassName="products-grid"
       >
         {({node: product, index}) => (
-          <ProductItem
+          <ProductCard
             key={product.id}
             product={product}
-            loading={index < 8 ? 'eager' : undefined}
+            loading={index < 8 ? 'eager' : 'lazy'}
           />
         )}
       </PaginatedResourceSection>
+
+      <SeoJsonLd
+        data={breadcrumbJsonLd([
+          {name: 'Home', url: '/'},
+          {name: collection.title, url: `/collections/${collection.handle}`},
+        ])}
+      />
+
       <Analytics.CollectionView
         data={{
           collection: {
@@ -92,7 +118,7 @@ export default function Collection() {
           },
         }}
       />
-    </div>
+    </Container>
   );
 }
 
@@ -140,6 +166,17 @@ const COLLECTION_QUERY = `#graphql
       handle
       title
       description
+      image {
+        id
+        url
+        altText
+        width
+        height
+      }
+      seo {
+        title
+        description
+      }
       products(
         first: $first,
         last: $last,

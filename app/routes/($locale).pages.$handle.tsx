@@ -1,9 +1,17 @@
 import {useLoaderData} from 'react-router';
 import type {Route} from './+types/pages.$handle';
+
+import {Container} from '~/components/Container';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import {buildMeta} from '~/lib/seo';
 
 export const meta: Route.MetaFunction = ({data}) => {
-  return [{title: `Hydrogen | ${data?.page.title ?? ''}`}];
+  const page = data?.page;
+  return buildMeta({
+    title: page?.seo?.title || page?.title,
+    description: page?.seo?.description,
+    url: page ? `/pages/${page.handle}` : undefined,
+  });
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -58,12 +66,19 @@ export default function Page() {
   const {page} = useLoaderData<typeof loader>();
 
   return (
-    <div className="page">
-      <header>
-        <h1>{page.title}</h1>
-      </header>
-      <main dangerouslySetInnerHTML={{__html: page.body}} />
-    </div>
+    <Container className="py-10 lg:py-16">
+      <article className="mx-auto max-w-3xl">
+        <header className="mb-10 border-b border-border pb-10">
+          <h1 className="text-[length:var(--text-headline)] leading-[var(--text-headline--line-height)] font-semibold tracking-[var(--text-headline--letter-spacing)]">
+            {page.title}
+          </h1>
+        </header>
+        <div
+          className="prose prose-neutral max-w-none"
+          dangerouslySetInnerHTML={{__html: page.body}}
+        />
+      </article>
+    </Container>
   );
 }
 

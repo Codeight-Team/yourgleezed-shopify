@@ -1,17 +1,24 @@
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
-import type {CartLayout} from '~/components/CartMain';
 import {CartForm, Money, type OptimisticCart} from '@shopify/hydrogen';
 import {useEffect, useId, useRef, useState} from 'react';
 import {useFetcher} from 'react-router';
+
+import type {CartLayout} from '~/components/CartMain';
+import {Input} from '~/components/ui/input';
+import {Button} from '~/components/ui/button';
+import {Separator} from '~/components/ui/separator';
+import {cn} from '~/lib/utils';
 
 type CartSummaryProps = {
   cart: OptimisticCart<CartApiQueryFragment | null>;
   layout: CartLayout;
 };
 
+/**
+ * Cart totals, discount and gift-card forms, and the checkout CTA. On the
+ * cart page it becomes a sticky sidebar; in the drawer it pins to the bottom.
+ */
 export function CartSummary({cart, layout}: CartSummaryProps) {
-  const className =
-    layout === 'page' ? 'cart-summary-page' : 'cart-summary-aside';
   const summaryId = useId();
   const discountsHeadingId = useId();
   const discountCodeInputId = useId();
@@ -19,18 +26,31 @@ export function CartSummary({cart, layout}: CartSummaryProps) {
   const giftCardInputId = useId();
 
   return (
-    <div aria-labelledby={summaryId} className={className}>
-      <h4 id={summaryId}>Totals</h4>
-      <dl role="group" className="cart-subtotal">
-        <dt>Subtotal</dt>
-        <dd>
+    <div
+      aria-labelledby={summaryId}
+      className={cn(
+        'flex flex-col gap-5 rounded-2xl border border-border bg-muted/30 p-6',
+        layout === 'page' && 'lg:sticky lg:top-24',
+        layout === 'aside' && 'mt-6',
+      )}
+    >
+      <h2 id={summaryId} className="text-sm font-semibold tracking-wide uppercase">
+        Order summary
+      </h2>
+
+      <dl className="flex items-center justify-between text-sm">
+        <dt className="text-muted-foreground">Subtotal</dt>
+        <dd className="font-medium tabular-nums">
           {cart?.cost?.subtotalAmount?.amount ? (
-            <Money data={cart?.cost?.subtotalAmount} />
+            <Money data={cart.cost.subtotalAmount} />
           ) : (
-            '-'
+            '—'
           )}
         </dd>
       </dl>
+
+      <Separator />
+
       <CartDiscounts
         discountCodes={cart?.discountCodes}
         discountsHeadingId={discountsHeadingId}
@@ -42,6 +62,10 @@ export function CartSummary({cart, layout}: CartSummaryProps) {
         giftCardInputId={giftCardInputId}
       />
       <CartCheckoutActions checkoutUrl={cart?.checkoutUrl} />
+
+      <p className="text-center text-xs text-muted-foreground">
+        Shipping &amp; taxes calculated at checkout.
+      </p>
     </div>
   );
 }
@@ -50,12 +74,11 @@ function CartCheckoutActions({checkoutUrl}: {checkoutUrl?: string}) {
   if (!checkoutUrl) return null;
 
   return (
-    <div>
+    <Button asChild size="lg" className="h-12 w-full rounded-full">
       <a href={checkoutUrl} target="_self">
-        <p>Continue to Checkout &rarr;</p>
+        Continue to checkout
       </a>
-      <br />
-    </div>
+    </Button>
   );
 }
 
@@ -74,43 +97,46 @@ function CartDiscounts({
       ?.map(({code}) => code) || [];
 
   return (
-    <section aria-label="Discounts">
-      {/* Have existing discount, display it with a remove option */}
-      <dl hidden={!codes.length}>
-        <div>
-          <dt id={discountsHeadingId}>Discounts</dt>
-          <UpdateDiscountForm>
-            <div
-              className="cart-discount"
-              role="group"
-              aria-labelledby={discountsHeadingId}
-            >
-              <code>{codes?.join(', ')}</code>
-              &nbsp;
-              <button type="submit" aria-label="Remove discount">
+    <section aria-label="Discounts" className="flex flex-col gap-2">
+      {codes.length > 0 && (
+        <UpdateDiscountForm>
+          <div
+            className="flex items-center justify-between gap-2 text-sm"
+            role="group"
+            aria-labelledby={discountsHeadingId}
+          >
+            <span id={discountsHeadingId} className="text-muted-foreground">
+              Discount(s)
+            </span>
+            <div className="flex items-center gap-2">
+              <code className="font-medium">{codes.join(', ')}</code>
+              <button
+                type="submit"
+                aria-label="Remove discount"
+                className="text-xs text-muted-foreground hover:text-destructive"
+              >
                 Remove
               </button>
             </div>
-          </UpdateDiscountForm>
-        </div>
-      </dl>
+          </div>
+        </UpdateDiscountForm>
+      )}
 
-      {/* Show an input to apply a discount */}
       <UpdateDiscountForm discountCodes={codes}>
-        <div>
+        <div className="flex gap-2">
           <label htmlFor={discountCodeInputId} className="sr-only">
             Discount code
           </label>
-          <input
+          <Input
             id={discountCodeInputId}
             type="text"
             name="discountCode"
             placeholder="Discount code"
+            className="h-10"
           />
-          &nbsp;
-          <button type="submit" aria-label="Apply discount code">
+          <Button type="submit" variant="outline" className="h-10">
             Apply
-          </button>
+          </Button>
         </div>
       </UpdateDiscountForm>
     </section>
@@ -128,9 +154,7 @@ function UpdateDiscountForm({
     <CartForm
       route="/cart"
       action={CartForm.ACTIONS.DiscountCodesUpdate}
-      inputs={{
-        discountCodes: discountCodes || [],
-      }}
+      inputs={{discountCodes: discountCodes || []}}
     >
       {children}
     </CartForm>
@@ -153,10 +177,8 @@ function CartGiftCard({
   const [removedCardIndex, setRemovedCardIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    if (giftCardAddFetcher.data) {
-      if (giftCardCodeInput.current !== null) {
-        giftCardCodeInput.current.value = '';
-      }
+    if (giftCardAddFetcher.data && giftCardCodeInput.current) {
+      giftCardCodeInput.current.value = '';
     }
   }, [giftCardAddFetcher.data]);
 
@@ -193,26 +215,27 @@ function CartGiftCard({
   };
 
   return (
-    <section aria-label="Gift cards">
+    <section aria-label="Gift cards" className="flex flex-col gap-2">
       {giftCardCodes && giftCardCodes.length > 0 && (
-        <dl>
-          <dt id={giftCardHeadingId}>Applied Gift Card(s)</dt>
+        <dl className="flex flex-col gap-1.5 text-sm">
+          <dt id={giftCardHeadingId} className="text-muted-foreground">
+            Applied gift card(s)
+          </dt>
           {giftCardCodes.map((giftCard) => (
-            <dd key={giftCard.id} className="cart-discount">
+            <dd
+              key={giftCard.id}
+              className="flex items-center justify-between gap-2"
+            >
               <RemoveGiftCardForm
                 giftCardId={giftCard.id}
                 lastCharacters={giftCard.lastCharacters}
                 onRemoveClick={() => handleRemoveClick(giftCard.id)}
-                buttonRef={(el: HTMLButtonElement | null) => {
-                  if (el) {
-                    removeButtonRefs.current.set(giftCard.id, el);
-                  } else {
-                    removeButtonRefs.current.delete(giftCard.id);
-                  }
+                buttonRef={(el) => {
+                  if (el) removeButtonRefs.current.set(giftCard.id, el);
+                  else removeButtonRefs.current.delete(giftCard.id);
                 }}
               >
                 <code>***{giftCard.lastCharacters}</code>
-                &nbsp;
                 <Money data={giftCard.amountUsed} />
               </RemoveGiftCardForm>
             </dd>
@@ -221,25 +244,26 @@ function CartGiftCard({
       )}
 
       <AddGiftCardForm fetcherKey="gift-card-add">
-        <div>
+        <div className="flex gap-2">
           <label htmlFor={giftCardInputId} className="sr-only">
             Gift card code
           </label>
-          <input
+          <Input
             id={giftCardInputId}
             type="text"
             name="giftCardCode"
             placeholder="Gift card code"
             ref={giftCardCodeInput}
+            className="h-10"
           />
-          &nbsp;
-          <button
+          <Button
             type="submit"
+            variant="outline"
+            className="h-10"
             disabled={giftCardAddFetcher.state !== 'idle'}
-            aria-label="Apply gift card code"
           >
             Apply
-          </button>
+          </Button>
         </div>
       </AddGiftCardForm>
     </section>
@@ -281,20 +305,20 @@ function RemoveGiftCardForm({
     <CartForm
       route="/cart"
       action={CartForm.ACTIONS.GiftCardCodesRemove}
-      inputs={{
-        giftCardCodes: [giftCardId],
-      }}
+      inputs={{giftCardCodes: [giftCardId]}}
     >
-      {children}
-      &nbsp;
-      <button
-        type="submit"
-        aria-label={`Remove gift card ending in ${lastCharacters}`}
-        onClick={onRemoveClick}
-        ref={buttonRef}
-      >
-        Remove
-      </button>
+      <div className="flex w-full items-center justify-between gap-2">
+        <span className="flex items-center gap-2">{children}</span>
+        <button
+          type="submit"
+          aria-label={`Remove gift card ending in ${lastCharacters}`}
+          onClick={onRemoveClick}
+          ref={buttonRef}
+          className="text-xs text-muted-foreground hover:text-destructive"
+        >
+          Remove
+        </button>
+      </div>
     </CartForm>
   );
 }

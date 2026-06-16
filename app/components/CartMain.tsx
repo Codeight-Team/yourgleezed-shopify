@@ -1,9 +1,13 @@
 import {useOptimisticCart} from '@shopify/hydrogen';
 import {Link} from 'react-router';
+import {ShoppingBagIcon} from 'lucide-react';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
+
 import {useAside} from '~/components/Aside';
 import {CartLineItem, type CartLine} from '~/components/CartLineItem';
-import {CartSummary} from './CartSummary';
+import {CartSummary} from '~/components/CartSummary';
+import {Button} from '~/components/ui/button';
+import {cn} from '~/lib/utils';
 
 export type CartLayout = 'page' | 'aside';
 
@@ -13,6 +17,7 @@ export type CartMainProps = {
 };
 
 export type LineItemChildrenMap = {[parentId: string]: CartLine[]};
+
 /** Returns a map of all line items and their children. */
 function getLineItemChildrenMap(lines: CartLine[]): LineItemChildrenMap {
   const children: LineItemChildrenMap = {};
@@ -32,78 +37,84 @@ function getLineItemChildrenMap(lines: CartLine[]): LineItemChildrenMap {
   }
   return children;
 }
+
 /**
- * The main cart component that displays the cart items and summary.
- * It is used by both the /cart route and the cart aside dialog.
+ * The main cart UI, shared by the `/cart` route and the cart drawer.
+ * Applies optimistic updates so quantity/remove actions feel instant.
  */
 export function CartMain({layout, cart: originalCart}: CartMainProps) {
-  // The useOptimisticCart hook applies pending actions to the cart
-  // so the user immediately sees feedback when they modify the cart.
   const cart = useOptimisticCart(originalCart);
 
   const linesCount = Boolean(cart?.lines?.nodes?.length || 0);
-  const withDiscount =
-    cart &&
-    Boolean(cart?.discountCodes?.filter((code) => code.applicable)?.length);
-  const className = `cart-main ${withDiscount ? 'with-discount' : ''}`;
   const cartHasItems = cart?.totalQuantity ? cart.totalQuantity > 0 : false;
   const childrenMap = getLineItemChildrenMap(cart?.lines?.nodes ?? []);
 
+  if (!linesCount) {
+    return <CartEmpty layout={layout} />;
+  }
+
   return (
     <section
-      className={className}
+      className={cn(
+        'flex flex-col',
+        layout === 'page' &&
+          'gap-10 lg:grid lg:grid-cols-[1fr_24rem] lg:items-start lg:gap-16',
+        layout === 'aside' && 'h-full',
+      )}
       aria-label={layout === 'page' ? 'Cart page' : 'Cart drawer'}
     >
-      <CartEmpty hidden={linesCount} layout={layout} />
-      <div className="cart-details">
+      <div className={cn(layout === 'aside' && 'flex flex-1 flex-col')}>
         <p id="cart-lines" className="sr-only">
           Line items
         </p>
-        <div>
-          <ul aria-labelledby="cart-lines">
-            {(cart?.lines?.nodes ?? []).map((line) => {
-              // we do not render non-parent lines at the root of the cart
-              if (
-                'parentRelationship' in line &&
-                line.parentRelationship?.parent
-              ) {
-                return null;
-              }
-              return (
-                <CartLineItem
-                  key={line.id}
-                  line={line}
-                  layout={layout}
-                  childrenMap={childrenMap}
-                />
-              );
-            })}
-          </ul>
-        </div>
-        {cartHasItems && <CartSummary cart={cart} layout={layout} />}
+        <ul aria-labelledby="cart-lines" className="divide-y divide-border">
+          {(cart?.lines?.nodes ?? []).map((line) => {
+            if (
+              'parentRelationship' in line &&
+              line.parentRelationship?.parent
+            ) {
+              return null;
+            }
+            return (
+              <CartLineItem
+                key={line.id}
+                line={line}
+                layout={layout}
+                childrenMap={childrenMap}
+              />
+            );
+          })}
+        </ul>
       </div>
+      {cartHasItems && <CartSummary cart={cart} layout={layout} />}
     </section>
   );
 }
 
-function CartEmpty({
-  hidden = false,
-}: {
-  hidden: boolean;
-  layout?: CartMainProps['layout'];
-}) {
+function CartEmpty({layout}: {layout: CartMainProps['layout']}) {
   const {close} = useAside();
   return (
-    <div hidden={hidden}>
-      <br />
-      <p>
-        Looks like you haven&rsquo;t added anything yet, let&rsquo;s get you
-        started!
-      </p>
-      <br />
-      <Link to="/collections" onClick={close} prefetch="viewport">
-        Continue shopping →
-      </Link>
+    <div
+      className={cn(
+        'flex flex-col items-center justify-center gap-5 py-16 text-center',
+        layout === 'aside' && 'h-full',
+      )}
+    >
+      <span className="flex size-16 items-center justify-center rounded-full bg-muted">
+        <ShoppingBagIcon className="size-7 text-muted-foreground" />
+      </span>
+      <div className="flex flex-col gap-1.5">
+        <h2 className="text-lg font-semibold">Your cart is empty</h2>
+        <p className="max-w-xs text-sm text-muted-foreground">
+          Looks like you haven&rsquo;t added anything yet. Let&rsquo;s find
+          something you&rsquo;ll love.
+        </p>
+      </div>
+      <Button asChild size="lg" className="rounded-full px-8" onClick={close}>
+        <Link to="/collections" prefetch="viewport">
+          Continue shopping
+        </Link>
+      </Button>
     </div>
   );
 }

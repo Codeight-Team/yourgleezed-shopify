@@ -39,9 +39,9 @@ function SearchResultsArticles({
   }
 
   return (
-    <div className="search-result">
-      <h2>Articles</h2>
-      <div>
+    <div className="mb-10">
+      <h2 className="mb-4 text-lg font-semibold">Articles</h2>
+      <div className="flex flex-col gap-2">
         {articles?.nodes?.map((article) => {
           const articleUrl = urlWithTrackingParams({
             baseUrl: `/blogs/${article.handle}`,
@@ -50,15 +50,18 @@ function SearchResultsArticles({
           });
 
           return (
-            <div className="search-results-item" key={article.id}>
-              <Link prefetch="intent" to={articleUrl}>
+            <div key={article.id}>
+              <Link
+                prefetch="intent"
+                to={articleUrl}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
                 {article.title}
               </Link>
             </div>
           );
         })}
       </div>
-      <br />
     </div>
   );
 }
@@ -69,9 +72,9 @@ function SearchResultsPages({term, pages}: PartialSearchResult<'pages'>) {
   }
 
   return (
-    <div className="search-result">
-      <h2>Pages</h2>
-      <div>
+    <div className="mb-10">
+      <h2 className="mb-4 text-lg font-semibold">Pages</h2>
+      <div className="flex flex-col gap-2">
         {pages?.nodes?.map((page) => {
           const pageUrl = urlWithTrackingParams({
             baseUrl: `/pages/${page.handle}`,
@@ -80,15 +83,18 @@ function SearchResultsPages({term, pages}: PartialSearchResult<'pages'>) {
           });
 
           return (
-            <div className="search-results-item" key={page.id}>
-              <Link prefetch="intent" to={pageUrl}>
+            <div key={page.id}>
+              <Link
+                prefetch="intent"
+                to={pageUrl}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
                 {page.title}
               </Link>
             </div>
           );
         })}
       </div>
-      <br />
     </div>
   );
 }
@@ -102,8 +108,8 @@ function SearchResultsProducts({
   }
 
   return (
-    <div className="search-result">
-      <h2>Products</h2>
+    <div className="mb-10">
+      <h2 className="mb-6 text-lg font-semibold">Products</h2>
       <Pagination connection={products}>
         {({nodes, isLoading, NextLink, PreviousLink}) => {
           const ItemsMarkup = nodes.map((product) => {
@@ -117,45 +123,61 @@ function SearchResultsProducts({
             const image = product?.selectedOrFirstAvailableVariant?.image;
 
             return (
-              <div className="search-results-item" key={product.id}>
-                <Link prefetch="intent" to={productUrl}>
+              <Link
+                prefetch="intent"
+                to={productUrl}
+                key={product.id}
+                className="group flex flex-col gap-3"
+              >
+                <div className="aspect-square overflow-hidden rounded-xl bg-muted ring-1 ring-foreground/5">
                   {image && (
-                    <Image data={image} alt={product.title} width={50} />
+                    <Image
+                      data={image}
+                      alt={product.title}
+                      sizes="(min-width: 1024px) 25vw, 50vw"
+                      className="size-full object-cover transition-transform duration-700 ease-[var(--ease-premium)] group-hover:scale-105"
+                    />
                   )}
-                  <div>
-                    <p>{product.title}</p>
-                    <small>{price && <Money data={price} />}</small>
-                  </div>
-                </Link>
-              </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-medium group-hover:text-brand">
+                    {product.title}
+                  </p>
+                  <small className="text-sm text-muted-foreground">
+                    {price && <Money data={price} />}
+                  </small>
+                </div>
+              </Link>
             );
           });
 
           return (
-            <div>
-              <div>
-                <PreviousLink>
-                  {isLoading ? 'Loading...' : <span>↑ Load previous</span>}
+            <div className="flex flex-col gap-8">
+              <div className="flex justify-center">
+                <PreviousLink className="text-sm text-muted-foreground hover:text-foreground">
+                  {isLoading ? 'Loading…' : <span>↑ Load previous</span>}
                 </PreviousLink>
               </div>
-              <div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 lg:grid-cols-3 xl:grid-cols-4">
                 {ItemsMarkup}
-                <br />
               </div>
-              <div>
-                <NextLink>
-                  {isLoading ? 'Loading...' : <span>Load more ↓</span>}
+              <div className="flex justify-center">
+                <NextLink className="text-sm text-muted-foreground hover:text-foreground">
+                  {isLoading ? 'Loading…' : <span>Load more ↓</span>}
                 </NextLink>
               </div>
             </div>
           );
         }}
       </Pagination>
-      <br />
     </div>
   );
 }
 
 function SearchResultsEmpty() {
-  return <p>No results, try a different search.</p>;
+  return (
+    <p className="py-16 text-center text-muted-foreground">
+      No results, try a different search.
+    </p>
+  );
 }
