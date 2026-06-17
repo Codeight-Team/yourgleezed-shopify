@@ -21,7 +21,7 @@ interface FeaturedCollectionsProps {
 export function FeaturedCollections({
   collections,
   eyebrow = 'Explore',
-  title = 'Shop by collection',
+  title = 'Shop by Categories',
   description,
 }: FeaturedCollectionsProps) {
   if (!collections.length) return null;

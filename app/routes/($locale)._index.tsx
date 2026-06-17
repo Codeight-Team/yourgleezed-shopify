@@ -98,7 +98,7 @@ export default function Homepage() {
       )}
 
       <FeaturedCollections
-        collections={collections.slice(0, 3)}
+        collections={collections.slice(0, 6)}
         description="Thoughtfully curated edits for every part of your day."
       />
 

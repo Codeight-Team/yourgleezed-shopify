@@ -6,6 +6,8 @@ import {
   CarouselPrevious,
 } from '~/components/ui/carousel';
 import {Image} from '@shopify/hydrogen';
+import Autoplay from 'embla-carousel-autoplay';
+import {useRef} from 'react';
 
 interface CarouselImageNode {
   id: string;
@@ -43,9 +45,21 @@ export function Slideshow({
     return null;
   }
 
+  const plugin = useRef(Autoplay({delay: 4000, stopOnInteraction: true}));
+
   return (
-    <div className='lg:p-10 p-5'>
-      <Carousel className="w-full overflow-hidden" opts={{loop: true}}>
+    <div className="lg:p-10 p-5">
+      <Carousel
+        className="w-full overflow-hidden"
+        plugins={[plugin.current]}
+        onMouseEnter={plugin.current.stop}
+        onMouseLeave={() => {
+          if (plugin.current) {
+            plugin.current.reset();
+            plugin.current.play(); // Force it to restart if needed
+          }
+        }}
+      >
         <CarouselContent className="ml-0">
           {carouselImages.map((node, index) => {
             const img = node.image;
