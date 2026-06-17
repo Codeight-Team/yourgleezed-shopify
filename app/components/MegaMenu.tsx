@@ -1,10 +1,9 @@
-import {useState} from 'react';
+import {useState, useRef, useEffect} from 'react';
 import {NavLink} from 'react-router';
 import {ChevronDownIcon} from 'lucide-react';
 import type {HeaderQuery} from 'storefrontapi.generated';
 
 import {useAside} from '~/components/Aside';
-import {Container} from '~/components/Container';
 import {
   Accordion,
   AccordionContent,
@@ -33,7 +32,7 @@ const FALLBACK_MENU = {
 } as unknown as NonNullable<Menu>;
 
 /**
- * Desktop navigation with hover/focus mega-menu panels for items that have
+ * Desktop navigation with hover/focus dropdown panels for items that have
  * children. Items without children render as simple links.
  */
 export function MegaMenu({
@@ -44,13 +43,38 @@ export function MegaMenu({
 }: MegaMenuProps) {
   const items = (menu ?? FALLBACK_MENU).items;
   const [activeId, setActiveId] = useState<string | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  const handleMouseEnter = (id: string, hasChildren: boolean) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setActiveId(hasChildren ? id : null);
+  };
+
+  const handleMouseLeave = () => {
+    // Small delay to prevent flickering when moving between items
+    timeoutRef.current = setTimeout(() => {
+      setActiveId(null);
+    }, 100);
+  };
+
+  const handleDropdownMouseEnter = (id: string) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setActiveId(id);
+  };
 
   return (
     <nav
       className={cn('items-center gap-1', className)}
       role="navigation"
       aria-label="Primary"
-      onMouseLeave={() => setActiveId(null)}
+      onMouseLeave={handleMouseLeave}
     >
       {items.map((item) => {
         if (!item.url) return null;
@@ -62,8 +86,8 @@ export function MegaMenu({
         return (
           <div
             key={item.id}
-            className="group/item"
-            onMouseEnter={() => setActiveId(hasChildren ? item.id : null)}
+            className="relative"
+            onMouseEnter={() => handleMouseEnter(item.id, hasChildren)}
           >
             <NavLink
               to={href}
@@ -82,17 +106,32 @@ export function MegaMenu({
               {hasChildren && (
                 <ChevronDownIcon
                   className={cn(
-                    'size-3.5 text-muted-foreground transition-transform',
+                    'size-3.5 text-muted-foreground transition-transform duration-200',
                     isOpen && 'rotate-180',
                   )}
                 />
               )}
             </NavLink>
 
-            {hasChildren && isOpen && (
-              <div className="absolute inset-x-0 top-full z-40 border-b border-border bg-background/95 shadow-lg backdrop-blur-xl">
-                <Container className="py-8">
-                  <ul className="grid grid-cols-2 gap-x-8 gap-y-3 md:grid-cols-4">
+            {hasChildren && (
+              <div
+                className={cn(
+                  'absolute left-1/2 top-[calc(100%+8px)] z-40 min-w-[200px] -translate-x-1/2',
+                  isOpen ? 'pointer-events-auto' : 'pointer-events-none',
+                )}
+                onMouseEnter={() => handleDropdownMouseEnter(item.id)}
+                onMouseLeave={handleMouseLeave}
+              >
+                <div
+                  className={cn(
+                    'origin-top rounded-xl border border-border bg-background/95 shadow-lg backdrop-blur-xl',
+                    'transition-all duration-200 ease-out',
+                    isOpen
+                      ? 'translate-y-0 scale-100 opacity-100'
+                      : 'translate-y-1 scale-95 opacity-0',
+                  )}
+                >
+                  <ul className="flex flex-col p-1.5">
                     {children.map((child) => {
                       if (!child.url) return null;
                       const sub = toAppHref(
@@ -106,7 +145,7 @@ export function MegaMenu({
                             to={sub.href}
                             prefetch="intent"
                             onClick={() => setActiveId(null)}
-                            className="block text-sm text-muted-foreground transition-colors hover:text-foreground"
+                            className="block truncate whitespace-nowrap rounded-lg py-2 pl-10 pr-15 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                           >
                             {child.title}
                           </NavLink>
@@ -114,7 +153,7 @@ export function MegaMenu({
                       );
                     })}
                   </ul>
-                </Container>
+                </div>
               </div>
             )}
           </div>
@@ -141,7 +180,13 @@ export function MobileMenu({
 
   return (
     <nav role="navigation" aria-label="Mobile">
-      <NavLink to="/" end prefetch="intent" onClick={close} className={linkClass}>
+      <NavLink
+        to="/"
+        end
+        prefetch="intent"
+        onClick={close}
+        className={linkClass}
+      >
         Home
       </NavLink>
 
@@ -199,7 +244,7 @@ export function MobileMenu({
                           to={sub.href}
                           prefetch="intent"
                           onClick={close}
-                          className="block py-2 text-sm text-muted-foreground hover:text-foreground"
+                          className="block truncate whitespace-nowrap py-2 text-sm text-muted-foreground hover:text-foreground"
                         >
                           {child.title}
                         </NavLink>

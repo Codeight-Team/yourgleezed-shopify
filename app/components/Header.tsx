@@ -2,6 +2,7 @@ import {Suspense} from 'react';
 import {Await, NavLink, useAsyncValue} from 'react-router';
 import {
   type CartViewPayload,
+  Image,
   useAnalytics,
   useOptimisticCart,
 } from '@shopify/hydrogen';
@@ -31,8 +32,10 @@ export function Header({
   cart,
   publicStoreDomain,
 }: HeaderProps) {
+  console.log(header);
+
   const {shop, menu} = header;
-  const {scrolled} = useScrollDirection();
+  const {scrolled, direction} = useScrollDirection();
   const {open} = useAside();
 
   return (
@@ -42,9 +45,16 @@ export function Header({
         scrolled
           ? 'border-b border-border bg-background/80 backdrop-blur-xl'
           : 'border-b border-transparent bg-background',
+        scrolled && direction === 'down' && '-translate-y-full',
+        scrolled && direction === 'up' && 'translate-y-0',
       )}
+      style={{
+        transitionProperty: 'transform, border-color, background-color',
+        transitionDuration: '300ms',
+        transitionTimingFunction: 'var(--ease-premium)',
+      }}
     >
-      <Container className="flex h-16 items-center gap-4">
+      <Container className="flex h-16 items-center justify-between gap-4">
         <button
           type="button"
           className="-ml-2 flex size-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted lg:hidden"
@@ -54,21 +64,25 @@ export function Header({
           <MenuIcon className="size-5" />
         </button>
 
-        <NavLink
-          prefetch="intent"
-          to="/"
-          end
-          className="text-lg font-semibold tracking-tight"
-        >
-          {shop.name}
-        </NavLink>
-
         <MegaMenu
           menu={menu}
           primaryDomainUrl={shop.primaryDomain.url}
           publicStoreDomain={publicStoreDomain}
           className="ml-6 hidden lg:flex"
         />
+
+        <NavLink
+          prefetch="intent"
+          to="/"
+          end
+          className="flex items-center text-lg font-semibold tracking-tight"
+        >
+          <Image
+            className="max-h-8 w-auto object-contain"
+            src={shop.brand?.logo?.image?.url}
+            alt={shop.name}
+          />
+        </NavLink>
 
         <HeaderCtas isLoggedIn={isLoggedIn} cart={cart} />
       </Container>
@@ -92,7 +106,7 @@ function HeaderCtas({
 
   return (
     <nav
-      className="ml-auto flex items-center gap-0.5"
+      className="flex items-center gap-0.5"
       role="navigation"
       aria-label="Account, search and cart"
     >
@@ -112,7 +126,10 @@ function HeaderCtas({
         className="flex size-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted"
       >
         <Suspense fallback={<UserIcon className="size-5" />}>
-          <Await resolve={isLoggedIn} errorElement={<UserIcon className="size-5" />}>
+          <Await
+            resolve={isLoggedIn}
+            errorElement={<UserIcon className="size-5" />}
+          >
             {() => <UserIcon className="size-5" />}
           </Await>
         </Suspense>

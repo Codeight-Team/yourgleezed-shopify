@@ -8,3 +8,5 @@ node_modules
 .shopify
 .react-router
 AI_RULES.md
+CLAUDE.md
+/.claude
