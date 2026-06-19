@@ -6,7 +6,6 @@ import {
   useOptimisticVariant,
   getProductOptions,
   getAdjacentAndFirstAvailableVariants,
-  useSelectedOptionInUrlParam,
 } from '@shopify/hydrogen';
 
 import {Price} from '~/components/Price';
@@ -30,8 +29,7 @@ export const meta: Route.MetaFunction = ({data}) => {
   return buildMeta({
     title: product?.seo?.title || product?.title,
     description:
-      product?.seo?.description ||
-      product?.description?.slice(0, 160),
+      product?.seo?.description || product?.description?.slice(0, 160),
     url: product ? `/products/${product.handle}` : undefined,
     image: product?.selectedOrFirstAvailableVariant?.image?.url,
     type: 'product',
@@ -74,8 +72,17 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
   // The API handle might be localized, so redirect to the localized handle
   redirectIfHandleIsLocalized(request, {handle, data: product});
 
+  const seriesValue = product?.metafield?.value;
+
+  const seriesProducts = seriesValue
+    ? await storefront.query(SERIES_PRODUCTS_QUERY, {
+        variables: {series: seriesValue, first: 12},
+      })
+    : null;
+
   return {
     product,
+    seriesProducts,
   };
 }
 
@@ -92,17 +99,13 @@ function loadDeferredData({context, params}: Route.LoaderArgs) {
 }
 
 export default function Product() {
-  const {product} = useLoaderData<typeof loader>();
+  const {product, seriesProducts} = useLoaderData<typeof loader>();
 
   // Optimistically selects a variant with given available variant information
   const selectedVariant = useOptimisticVariant(
     product.selectedOrFirstAvailableVariant,
     getAdjacentAndFirstAvailableVariants(product),
   );
-
-  // Sets the search param to the selected variant without navigation
-  // only when no search params are set in the url
-  useSelectedOptionInUrlParam(selectedVariant.selectedOptions);
 
   // Get the product options array
   const productOptions = getProductOptions({
@@ -119,12 +122,11 @@ export default function Product() {
     Number(compareAtPrice.amount) > Number(price.amount);
 
   // Build the gallery from product media, falling back to the variant image.
-  const galleryImages: GalleryImage[] =
-    product.images?.nodes?.length
-      ? product.images.nodes
-      : selectedVariant?.image
-        ? [selectedVariant.image]
-        : [];
+  const galleryImages: GalleryImage[] = product.images?.nodes?.length
+    ? product.images.nodes
+    : selectedVariant?.image
+      ? [selectedVariant.image]
+      : [];
 
   return (
     <Container className="py-10 lg:py-16">
@@ -145,11 +147,36 @@ export default function Product() {
             <h1 className="text-[length:var(--text-title)] leading-[var(--text-title--line-height)] font-semibold tracking-[var(--text-title--letter-spacing)]">
               {title}
             </h1>
+
             <div className="flex items-center gap-3">
               <Price price={price} compareAtPrice={compareAtPrice} size="lg" />
               {onSale && <Badge variant="destructive">Sale</Badge>}
             </div>
           </div>
+          {seriesProducts?.products?.nodes?.length > 0 && (
+            <div className="mb-10">
+              <h2 className="text-lg font-semibold mb-4">Series Products</h2>
+              <div
+                className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide"
+                style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}
+              >
+                {seriesProducts.products.nodes.map((item: any) => (
+                  <div
+                    key={item.id}
+                    className="flex-shrink-0 w-40 cursor-pointer"
+                  >
+                    <div className="aspect-square bg-muted rounded-lg mb-2 overflow-hidden">
+                      <img
+                        src={item.featuredImage?.url}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <ProductForm
             productOptions={productOptions}
@@ -175,8 +202,8 @@ export default function Product() {
               <AccordionItem value="shipping">
                 <AccordionTrigger>Shipping &amp; returns</AccordionTrigger>
                 <AccordionContent>
-                  Free standard shipping on orders over $75. Easy 30-day
-                  returns on all unworn items.
+                  Free standard shipping on orders over $75. Easy 30-day returns
+                  on all unworn items.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -303,6 +330,9 @@ const PRODUCT_FRAGMENT = `#graphql
     adjacentVariants (selectedOptions: $selectedOptions) {
       ...ProductVariant
     }
+    metafield(namespace: "custom", key: "series") {
+      value
+    }
     seo {
       description
       title
@@ -323,4 +353,28 @@ const PRODUCT_QUERY = `#graphql
     }
   }
   ${PRODUCT_FRAGMENT}
+` as const;
+
+const SERIES_PRODUCTS_QUERY = `#graphql
+  query SeriesProducts($series: String!, $first: Int!) {
+    products(first: $first, query: $series) {
+      nodes {
+        id
+        title
+        handle
+        featuredImage {
+          url
+          altText
+          width
+          height
+        }
+        priceRange {
+          minVariantPrice {
+            amount
+            currencyCode
+          }
+        }
+      }
+    }
+  }
 ` as const;

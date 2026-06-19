@@ -32,8 +32,6 @@ export function Header({
   cart,
   publicStoreDomain,
 }: HeaderProps) {
-  console.log(header);
-
   const {shop, menu} = header;
   const {scrolled, direction} = useScrollDirection();
   const {open} = useAside();
@@ -81,6 +79,7 @@ export function Header({
             className="max-h-8 w-auto object-contain"
             src={shop.brand?.logo?.image?.url}
             alt={shop.name}
+            sizes="(min-width: 45em) 25vw, 100vw"
           />
         </NavLink>
 
