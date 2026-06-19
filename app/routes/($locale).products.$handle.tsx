@@ -7,6 +7,7 @@ import {
   getProductOptions,
   getAdjacentAndFirstAvailableVariants,
 } from '@shopify/hydrogen';
+import {useEffect} from 'react';
 
 import {Price} from '~/components/Price';
 import {ProductImage} from '~/components/ProductImage';
@@ -23,6 +24,8 @@ import {Badge} from '~/components/ui/badge';
 import {SeoJsonLd} from '~/components/SeoJsonLd';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {buildMeta, productJsonLd, breadcrumbJsonLd} from '~/lib/seo';
+import {ScrollArea, ScrollBar} from '~/components/ui/scroll-area';
+import {useRef} from 'react';
 
 export const meta: Route.MetaFunction = ({data}) => {
   const product = data?.product;
@@ -100,6 +103,22 @@ function loadDeferredData({context, params}: Route.LoaderArgs) {
 
 export default function Product() {
   const {product, seriesProducts} = useLoaderData<typeof loader>();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, {passive: false});
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, []);
 
   // Optimistically selects a variant with given available variant information
   const selectedVariant = useOptimisticVariant(
@@ -156,25 +175,28 @@ export default function Product() {
           {seriesProducts?.products?.nodes?.length > 0 && (
             <div className="mb-10">
               <h2 className="text-lg font-semibold mb-4">Series Products</h2>
-              <div
-                className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide"
-                style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}
+              <ScrollArea
+                className="w-full whitespace-nowrap"
+                viewportRef={scrollRef}
               >
-                {seriesProducts.products.nodes.map((item: any) => (
-                  <div
-                    key={item.id}
-                    className="flex-shrink-0 w-40 cursor-pointer"
-                  >
-                    <div className="aspect-square bg-muted rounded-lg mb-2 overflow-hidden">
-                      <img
-                        src={item.featuredImage?.url}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
+                <div className="flex gap-4">
+                  {seriesProducts.products.nodes.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="flex-shrink-0 w-40 cursor-pointer"
+                    >
+                      <div className="aspect-square bg-muted rounded-lg mb-2 overflow-hidden">
+                        <img
+                          src={item.featuredImage?.url}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
             </div>
           )}
 
