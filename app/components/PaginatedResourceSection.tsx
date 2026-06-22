@@ -2,6 +2,7 @@ import * as React from 'react';
 import {Pagination} from '@shopify/hydrogen';
 
 import {cn} from '~/lib/utils';
+import {sortProductsByAvailability} from '~/lib/products';
 
 const PRODUCT_GRID_CLASSES =
   'grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-12 lg:grid-cols-3 xl:grid-cols-4';
@@ -34,12 +35,15 @@ export function PaginatedResourceSection<NodesType>({
   ariaLabel,
   resourcesClassName = PRODUCT_GRID_CLASSES,
   mode = 'pagination',
+  sortByAvailability = false,
 }: {
   connection: React.ComponentProps<typeof Pagination<NodesType>>['connection'];
   children: React.FunctionComponent<{node: NodesType; index: number}>;
   ariaLabel?: string;
   resourcesClassName?: string;
   mode?: 'pagination' | 'infinite-scroll';
+  /** When true, in-stock products render before sold-out ones. */
+  sortByAvailability?: boolean;
 }) {
   const sentinelRef = React.useRef<HTMLDivElement>(null);
   const isLoadingRef = React.useRef(false);
@@ -99,8 +103,14 @@ export function PaginatedResourceSection<NodesType>({
           setShowSkeletons(false);
         }
 
-        const resourcesMarkup = nodes.map((node, index) =>
-          children({node, index}),
+        const displayNodes = sortByAvailability
+          ? sortProductsByAvailability(
+              nodes as Array<{availableForSale?: boolean | null}>,
+            )
+          : nodes;
+
+        const resourcesMarkup = displayNodes.map((node, index) =>
+          children({node: node as NodesType, index}),
         );
 
         const linkClass =

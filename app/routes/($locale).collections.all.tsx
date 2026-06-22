@@ -57,6 +57,7 @@ export default function Collection() {
         connection={products}
         resourcesClassName="products-grid"
         mode="infinite-scroll"
+        sortByAvailability
       >
         {({node: product, index}) => (
           <ProductItem
@@ -79,6 +80,7 @@ const COLLECTION_ITEM_FRAGMENT = `#graphql
     id
     handle
     title
+    availableForSale
     featuredImage {
       id
       altText

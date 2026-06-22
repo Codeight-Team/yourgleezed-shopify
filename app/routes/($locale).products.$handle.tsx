@@ -7,12 +7,12 @@ import {
   getProductOptions,
   getAdjacentAndFirstAvailableVariants,
 } from '@shopify/hydrogen';
-import {useEffect} from 'react';
 
 import {Price} from '~/components/Price';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductGallery, type GalleryImage} from '~/components/ProductGallery';
 import {ProductForm} from '~/components/ProductForm';
+import {SeriesProductsSlider} from '~/components/SeriesProductsSlider';
 import {Container} from '~/components/Container';
 import {
   Accordion,
@@ -24,8 +24,6 @@ import {Badge} from '~/components/ui/badge';
 import {SeoJsonLd} from '~/components/SeoJsonLd';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {buildMeta, productJsonLd, breadcrumbJsonLd} from '~/lib/seo';
-import {ScrollArea, ScrollBar} from '~/components/ui/scroll-area';
-import {useRef} from 'react';
 
 export const meta: Route.MetaFunction = ({data}) => {
   const product = data?.product;
@@ -103,22 +101,6 @@ function loadDeferredData({context, params}: Route.LoaderArgs) {
 
 export default function Product() {
   const {product, seriesProducts} = useLoaderData<typeof loader>();
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        e.preventDefault();
-        el.scrollLeft += e.deltaY;
-      }
-    };
-
-    el.addEventListener('wheel', handleWheel, {passive: false});
-    return () => el.removeEventListener('wheel', handleWheel);
-  }, []);
 
   // Optimistically selects a variant with given available variant information
   const selectedVariant = useOptimisticVariant(
@@ -169,35 +151,22 @@ export default function Product() {
 
             <div className="flex items-center gap-3">
               <Price price={price} compareAtPrice={compareAtPrice} size="lg" />
-              {onSale && <Badge variant="destructive">Sale</Badge>}
+              {!selectedVariant?.availableForSale && <Badge className='bg-black text-white text-sm px-3 py-2' variant="muted">OUT OF STOCK</Badge>}
+              {onSale && <Badge className='text-sm px-3 py-2' variant="destructive">SALE</Badge>}
             </div>
           </div>
           {seriesProducts?.products?.nodes?.length > 0 && (
-            <div className="mb-10">
-              <h2 className="text-lg font-semibold mb-4">Series Products</h2>
-              <ScrollArea
-                className="w-full whitespace-nowrap"
-                viewportRef={scrollRef}
-              >
-                <div className="flex gap-4">
-                  {seriesProducts.products.nodes.map((item: any) => (
-                    <div
-                      key={item.id}
-                      className="flex-shrink-0 w-40 cursor-pointer"
-                    >
-                      <div className="aspect-square bg-muted rounded-lg mb-2 overflow-hidden">
-                        <img
-                          src={item.featuredImage?.url}
-                          alt={item.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
-            </div>
+            <SeriesProductsSlider
+              seriesProducts={seriesProducts}
+              currentProduct={{
+                id: product.id,
+                title: product.title,
+                handle: product.handle,
+                availableForSale: product.availableForSale,
+                featuredImage:
+                  selectedVariant?.image ?? product.images?.nodes?.[0] ?? null,
+              }}
+            />
           )}
 
           <ProductForm
@@ -316,6 +285,7 @@ const PRODUCT_FRAGMENT = `#graphql
     title
     vendor
     handle
+    availableForSale
     descriptionHtml
     description
     encodedVariantExistence
@@ -384,6 +354,7 @@ const SERIES_PRODUCTS_QUERY = `#graphql
         id
         title
         handle
+        availableForSale
         featuredImage {
           url
           altText

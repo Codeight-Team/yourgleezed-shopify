@@ -47,6 +47,8 @@ export function ProductCard({
   // A range where min < max signals "from" pricing.
   const isRange =
     maxPrice && minPrice && Number(maxPrice.amount) > Number(minPrice.amount);
+  const isOutOfStock =
+    'availableForSale' in product && product.availableForSale === false;
 
   return (
     <Link
@@ -63,12 +65,31 @@ export function ProductCard({
             data={image}
             loading={loading}
             sizes={sizes}
-            className="size-full object-cover transition-transform duration-700 ease-[var(--ease-premium)] group-hover:scale-105"
+            className={cn(
+              'size-full object-cover transition-transform duration-700 ease-[var(--ease-premium)]',
+              !isOutOfStock && 'group-hover:scale-105',
+            )}
           />
         ) : (
           <div className="flex size-full items-center justify-center text-sm text-muted-foreground">
             No image
           </div>
+        )}
+        {isOutOfStock && (
+          <>
+            <div
+              aria-hidden
+              className="absolute inset-0 bg-neutral-900/35"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Badge
+                variant="secondary"
+                className="border border-white/20 bg-white/60 px-3 py-2 text-sm text-zinc-600 font-bold tracking-wide shadow-sm"
+              >
+                Out of Stock
+              </Badge>
+            </div>
+          </>
         )}
         {isRange && (
           <Badge
@@ -86,7 +107,7 @@ export function ProductCard({
         {minPrice && (
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             {isRange && <span className="text-xs">From</span>}
-            <Price price={minPrice} size="sm" className="text-foreground" />
+            <Price price={minPrice} size="sm" className="text-muted-foreground" />
           </div>
         )}
       </div>

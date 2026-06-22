@@ -99,6 +99,7 @@ export default function Collection() {
 
       <PaginatedResourceSection<ProductItemFragment>
         connection={collection.products}
+        sortByAvailability
       >
         {({node: product, index}) => (
           <ProductCard
@@ -137,6 +138,7 @@ const PRODUCT_ITEM_FRAGMENT = `#graphql
     id
     handle
     title
+    availableForSale
     featuredImage {
       id
       altText
