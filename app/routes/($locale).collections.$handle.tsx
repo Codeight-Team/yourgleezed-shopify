@@ -8,6 +8,7 @@ import {ProductCard} from '~/components/ProductCard';
 import {Container} from '~/components/Container';
 import {SeoJsonLd} from '~/components/SeoJsonLd';
 import {Breadcrumbs} from '~/components/Breadcrumbs';
+import {FilterDrawer} from '~/components/FilterDrawer';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {buildMeta, breadcrumbJsonLd} from '~/lib/seo';
 
@@ -22,55 +23,50 @@ export const meta: Route.MetaFunction = ({data}) => {
 };
 
 export async function loader(args: Route.LoaderArgs) {
-  // Start fetching non-critical data without blocking time to first byte
   const deferredData = loadDeferredData(args);
-
-  // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
   return {...deferredData, ...criticalData};
 }
 
 /**
- * Load data necessary for rendering content above the fold. This is the critical data
- * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
+ * Load critical data for rendering content above the fold.
  */
 async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
   const {handle} = params;
   const {storefront} = context;
-  const paginationVariables = getPaginationVariables(request, {
-    pageBy: 8,
-  });
 
   if (!handle) {
     throw redirect('/collections');
   }
 
-  const [{collection}] = await Promise.all([
-    storefront.query(COLLECTION_QUERY, {
-      variables: {handle, ...paginationVariables},
-      // Add other queries here, so that they are loaded in parallel
-    }),
-  ]);
+  const paginationVariables = getPaginationVariables(request, {
+    pageBy: 8,
+  });
 
-  if (!collection) {
+  const collection = await storefront.query(COLLECTION_QUERY, {
+    variables: {
+      handle,
+      ...paginationVariables,
+    },
+  });
+
+  if (!collection?.collection) {
     throw new Response(`Collection ${handle} not found`, {
       status: 404,
     });
   }
 
   // The API handle might be localized, so redirect to the localized handle
-  redirectIfHandleIsLocalized(request, {handle, data: collection});
+  redirectIfHandleIsLocalized(request, {handle, data: collection.collection});
 
   return {
-    collection,
+    collection: collection.collection,
   };
 }
 
 /**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
- * Make sure to not throw any errors here, as it will cause the page to 500.
+ * Load deferred data for content below the fold.
  */
 function loadDeferredData({context}: Route.LoaderArgs) {
   return {};
@@ -82,18 +78,22 @@ export default function Collection() {
   return (
     <Container className="py-10 lg:py-16">
       <header className="flex flex-col gap-4 border-b border-border">
-        <h1 className="text-[length:var(--text-headline)] leading-[var(--text-headline--line-height)] font-semibold tracking-[var(--text-headline--letter-spacing)]">
-          {collection.title}
-        </h1>
-        {collection.description && (
-          <p className="max-w-2xl text-base text-muted-foreground">
-            {collection.description}
-          </p>
-        )}
         <Breadcrumbs
           items={[
             {name: collection.title, url: `/collections/${collection.handle}`},
           ]}
+        />
+        <FilterDrawer
+          filters={
+            collection.products.filters?.map((f: any) => ({
+              id: f.id,
+              label: f.label,
+              values: f.values.map((v: any) => ({
+                label: v.label,
+                count: v.count,
+              })),
+            })) ?? []
+          }
         />
       </header>
 
@@ -155,7 +155,7 @@ const PRODUCT_ITEM_FRAGMENT = `#graphql
   }
 ` as const;
 
-// NOTE: https://shopify.dev/docs/api/storefront/2022-04/objects/collection
+// NOTE: https://shopify.dev/docs/api/storefront/2024-01/objects/collection
 const COLLECTION_QUERY = `#graphql
   ${PRODUCT_ITEM_FRAGMENT}
   query Collection(
@@ -184,9 +184,9 @@ const COLLECTION_QUERY = `#graphql
         description
       }
       products(
-        first: $first,
-        last: $last,
-        before: $startCursor,
+        first: $first
+        last: $last
+        before: $startCursor
         after: $endCursor
       ) {
         nodes {
@@ -197,6 +197,14 @@ const COLLECTION_QUERY = `#graphql
           hasNextPage
           endCursor
           startCursor
+        }
+        filters {
+          id
+          label
+          values {
+            label
+            count
+          }
         }
       }
     }
