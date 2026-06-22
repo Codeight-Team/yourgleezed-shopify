@@ -4,8 +4,8 @@
  */
 
 export const BRAND = {
-  name: 'Aether',
-  tagline: 'Designed for the way you live.',
+  name: 'Yourgleezed',
+  tagline: 'Wonderfull Shawl to Complete YourGleezed',
   description:
     'Premium essentials engineered with precision. Thoughtfully designed, built to last.',
   email: 'hello@aether.store',

@@ -7,6 +7,7 @@ import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {ProductCard} from '~/components/ProductCard';
 import {Container} from '~/components/Container';
 import {SeoJsonLd} from '~/components/SeoJsonLd';
+import {Breadcrumbs} from '~/components/Breadcrumbs';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {buildMeta, breadcrumbJsonLd} from '~/lib/seo';
 
@@ -80,7 +81,7 @@ export default function Collection() {
 
   return (
     <Container className="py-10 lg:py-16">
-      <header className="mb-10 flex flex-col gap-4 border-b border-border pb-10">
+      <header className="flex flex-col gap-4 border-b border-border">
         <h1 className="text-[length:var(--text-headline)] leading-[var(--text-headline--line-height)] font-semibold tracking-[var(--text-headline--letter-spacing)]">
           {collection.title}
         </h1>
@@ -89,6 +90,11 @@ export default function Collection() {
             {collection.description}
           </p>
         )}
+        <Breadcrumbs
+          items={[
+            {name: collection.title, url: `/collections/${collection.handle}`},
+          ]}
+        />
       </header>
 
       <PaginatedResourceSection<ProductItemFragment>
