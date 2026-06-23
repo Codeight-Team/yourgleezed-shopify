@@ -43,7 +43,7 @@ export function Hero({
   const light = theme === 'light';
 
   return (
-    <section className="relative flex min-h-[80svh] w-full items-end overflow-hidden bg-foreground sm:min-h-[88svh]">
+    <section className="relative flex min-h-[20svh] w-full items-end overflow-hidden bg-foreground sm:min-h-[20svh]">
       {image && (
         <>
           <Image

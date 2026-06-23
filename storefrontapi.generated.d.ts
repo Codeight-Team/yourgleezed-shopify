@@ -643,7 +643,12 @@ export type CollectionQuery = {
         >;
         filters: Array<
           Pick<StorefrontAPI.Filter, 'id' | 'label'> & {
-            values: Array<Pick<StorefrontAPI.FilterValue, 'label' | 'count'>>;
+            values: Array<
+              Pick<
+                StorefrontAPI.FilterValue,
+                'id' | 'label' | 'count' | 'input'
+              >
+            >;
           }
         >;
       };
@@ -753,6 +758,37 @@ export type CatalogQuery = {
       'hasPreviousPage' | 'hasNextPage' | 'startCursor' | 'endCursor'
     >;
   };
+};
+
+export type ContactInformationQueryVariables = StorefrontAPI.Exact<{
+  [key: string]: never;
+}>;
+
+export type ContactInformationQuery = {
+  metaobject?: StorefrontAPI.Maybe<
+    Pick<StorefrontAPI.Metaobject, 'id'> & {
+      email?: StorefrontAPI.Maybe<Pick<StorefrontAPI.MetaobjectField, 'value'>>;
+      phone?: StorefrontAPI.Maybe<Pick<StorefrontAPI.MetaobjectField, 'value'>>;
+      whatsapp?: StorefrontAPI.Maybe<
+        Pick<StorefrontAPI.MetaobjectField, 'value'>
+      >;
+      address?: StorefrontAPI.Maybe<
+        Pick<StorefrontAPI.MetaobjectField, 'value'>
+      >;
+      businessHours?: StorefrontAPI.Maybe<
+        Pick<StorefrontAPI.MetaobjectField, 'value'>
+      >;
+      mapsUrl?: StorefrontAPI.Maybe<
+        Pick<StorefrontAPI.MetaobjectField, 'value'>
+      >;
+      instagramUrl?: StorefrontAPI.Maybe<
+        Pick<StorefrontAPI.MetaobjectField, 'value'>
+      >;
+      facebookUrl?: StorefrontAPI.Maybe<
+        Pick<StorefrontAPI.MetaobjectField, 'value'>
+      >;
+    }
+  >;
 };
 
 export type PageQueryVariables = StorefrontAPI.Exact<{
@@ -1362,7 +1398,7 @@ interface GeneratedQueryTypes {
     return: BlogsQuery;
     variables: BlogsQueryVariables;
   };
-  '#graphql\n  #graphql\n  fragment MoneyProductItem on MoneyV2 {\n    amount\n    currencyCode\n  }\n  fragment ProductItem on Product {\n    id\n    handle\n    title\n    availableForSale\n    featuredImage {\n      id\n      altText\n      url\n      width\n      height\n    }\n    priceRange {\n      minVariantPrice {\n        ...MoneyProductItem\n      }\n      maxVariantPrice {\n        ...MoneyProductItem\n      }\n    }\n  }\n\n  query Collection(\n    $handle: String!\n    $country: CountryCode\n    $language: LanguageCode\n    $first: Int\n    $last: Int\n    $startCursor: String\n    $endCursor: String\n    $filters: [ProductFilter!]\n  ) @inContext(country: $country, language: $language) {\n    collection(handle: $handle) {\n      id\n      handle\n      title\n      description\n      image {\n        id\n        url\n        altText\n        width\n        height\n      }\n      seo {\n        title\n        description\n      }\n      products(\n        first: $first\n        last: $last\n        before: $startCursor\n        after: $endCursor\n        filters: $filters\n      ) {\n        nodes {\n          ...ProductItem\n        }\n        pageInfo {\n          hasPreviousPage\n          hasNextPage\n          endCursor\n          startCursor\n        }\n        filters {\n          id\n          label\n          values {\n            label\n            count\n          }\n        }\n      }\n    }\n  }\n': {
+  '#graphql\n  #graphql\n  fragment MoneyProductItem on MoneyV2 {\n    amount\n    currencyCode\n  }\n  fragment ProductItem on Product {\n    id\n    handle\n    title\n    availableForSale\n    featuredImage {\n      id\n      altText\n      url\n      width\n      height\n    }\n    priceRange {\n      minVariantPrice {\n        ...MoneyProductItem\n      }\n      maxVariantPrice {\n        ...MoneyProductItem\n      }\n    }\n  }\n\n  query Collection(\n    $handle: String!\n    $country: CountryCode\n    $language: LanguageCode\n    $first: Int\n    $last: Int\n    $startCursor: String\n    $endCursor: String\n    $filters: [ProductFilter!]\n  ) @inContext(country: $country, language: $language) {\n    collection(handle: $handle) {\n      id\n      handle\n      title\n      description\n      image {\n        id\n        url\n        altText\n        width\n        height\n      }\n      seo {\n        title\n        description\n      }\n      products(\n        first: $first\n        last: $last\n        before: $startCursor\n        after: $endCursor\n        filters: $filters\n      ) {\n        nodes {\n          ...ProductItem\n        }\n        pageInfo {\n          hasPreviousPage\n          hasNextPage\n          endCursor\n          startCursor\n        }\n        filters {\n          id\n          label\n          values {\n            id\n            label\n            count\n            input\n          }\n        }\n      }\n    }\n  }\n': {
     return: CollectionQuery;
     variables: CollectionQueryVariables;
   };
@@ -1373,6 +1409,10 @@ interface GeneratedQueryTypes {
   '#graphql\n  query Catalog(\n    $country: CountryCode\n    $language: LanguageCode\n    $first: Int\n    $last: Int\n    $startCursor: String\n    $endCursor: String\n  ) @inContext(country: $country, language: $language) {\n    products(first: $first, last: $last, before: $startCursor, after: $endCursor) {\n      nodes {\n        ...CollectionItem\n      }\n      pageInfo {\n        hasPreviousPage\n        hasNextPage\n        startCursor\n        endCursor\n      }\n    }\n  }\n  #graphql\n  fragment MoneyCollectionItem on MoneyV2 {\n    amount\n    currencyCode\n  }\n  fragment CollectionItem on Product {\n    id\n    handle\n    title\n    availableForSale\n    featuredImage {\n      id\n      altText\n      url\n      width\n      height\n    }\n    priceRange {\n      minVariantPrice {\n        ...MoneyCollectionItem\n      }\n      maxVariantPrice {\n        ...MoneyCollectionItem\n      }\n    }\n  }\n\n': {
     return: CatalogQuery;
     variables: CatalogQueryVariables;
+  };
+  '#graphql\n  query ContactInformation {\n    metaobject(\n      handle: {\n        type: "contact_information"\n        handle: "contact-yourgleezed-com"\n      }\n    ) {\n      id\n      email: field(key: "email") {\n        value\n      }\n      phone: field(key: "phone") {\n        value\n      }\n      whatsapp: field(key: "whatsapp") {\n        value\n      }\n      address: field(key: "address") {\n        value\n      }\n      businessHours: field(key: "business_hours") {\n        value\n      }\n      mapsUrl: field(key: "maps_url") {\n        value\n      }\n      instagramUrl: field(key: "instagram_url") {\n        value\n      }\n      facebookUrl: field(key: "facebook_url") {\n        value\n      }\n    }\n  }\n': {
+    return: ContactInformationQuery;
+    variables: ContactInformationQueryVariables;
   };
   '#graphql\n  query Page(\n    $language: LanguageCode,\n    $country: CountryCode,\n    $handle: String!\n  )\n  @inContext(language: $language, country: $country) {\n    page(handle: $handle) {\n      handle\n      id\n      title\n      body\n      seo {\n        description\n        title\n      }\n    }\n  }\n': {
     return: PageQuery;
