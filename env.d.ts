@@ -5,3 +5,8 @@
 
 // Enhance TypeScript's built-in typings.
 import '@total-typescript/ts-reset';
+
+// react-dom/server.node does not ship its own types
+declare module 'react-dom/server.node' {
+  export {renderToReadableStream};
+}

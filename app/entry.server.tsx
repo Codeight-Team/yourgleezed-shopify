@@ -1,6 +1,6 @@
 import {ServerRouter} from 'react-router';
 import {isbot} from 'isbot';
-import {renderToReadableStream} from 'react-dom/server';
+import {renderToReadableStream} from 'react-dom/server.browser';
 import {
   createContentSecurityPolicy,
   type HydrogenRouterContextProvider,
@@ -43,7 +43,7 @@ export default async function handleRequest(
     {
       nonce,
       signal: abortController.signal,
-      onError(error) {
+      onError(error: unknown) {
         console.error(error);
         responseStatusCode = 500;
       },
