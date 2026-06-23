@@ -10,4 +10,7 @@ import {hydrogenPreset} from '@shopify/hydrogen/react-router-preset';
  */
 export default {
   presets: [hydrogenPreset()],
+  routeDiscovery: {
+    mode: 'initial',
+  },
 } satisfies Config;
