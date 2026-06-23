@@ -8,11 +8,11 @@ import netlifyReactRouter from '@netlify/vite-plugin-react-router';
 
 export default defineConfig({
   plugins: [
-    tailwindcss(),
     hydrogen(),
     reactRouter(),
     netlifyReactRouter({edge: true}),
     netlify(),
+    tailwindcss(),
   ],
   resolve: {
     tsconfigPaths: true,
