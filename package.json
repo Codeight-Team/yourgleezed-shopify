@@ -5,7 +5,7 @@
   "version": "2026.4.3",
   "type": "module",
   "scripts": {
-    "build": "shopify hydrogen build --codegen",
+    "build": "shopify hydrogen build --codegen && cp -v dist/server/server.js dist/server/index.js",
     "dev": "shopify hydrogen dev --codegen",
     "preview": "shopify hydrogen preview --build",
     "lint": "eslint --no-error-on-unmatched-pattern .",
