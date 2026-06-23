@@ -10,3 +10,4 @@ node_modules
 AI_RULES.md
 CLAUDE.md
 /.claude
+/.netlify

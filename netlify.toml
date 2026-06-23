@@ -1,0 +1,23 @@
+[build]
+  command = "npm run build"
+  publish = "dist/client"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+[dev]
+  command = "npm run dev"
+
+# Set immutable caching for static files, because they have fingerprinted filenames
+[[headers]]
+for = "/assets/*"
+[headers.values]
+"Cache-Control" = "public, max-age=31560000, immutable"
+
+# These are only used to set up the template, and are not used by your project.
+# You can safely delete this section.
+# If you want to update the real values, change them in the Netlify app or via the Netlify CLI.
+[template.environment]
+PUBLIC_STORE_DOMAIN = "yourgleezed.myshopify.com"
+SESSION_SECRET = "8ef087643aa2e3f93a507c60794bfa0a92787196cd1a1e4394617dbe1fab72b2"
+PUBLIC_STOREFRONT_API_TOKEN = "610ae9b3e2c58c5c50ec3a7e19ec0be5"

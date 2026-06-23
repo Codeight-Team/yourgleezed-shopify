@@ -14,6 +14,17 @@ export default async function handleRequest(
   reactRouterContext: EntryContext,
   context: HydrogenRouterContextProvider,
 ) {
+  // Deno's ReadableByteStreamController throws if the stream is closed after
+  // an abort signal fires. Work around this by using an intermediary
+  // AbortController that only forwards the abort if the stream is still open.
+  let isStreamClosing = false;
+  const abortController = new AbortController();
+  request.signal.addEventListener('abort', () => {
+    if (!isStreamClosing) {
+      abortController.abort(request.signal.reason);
+    }
+  });
+
   const {nonce, header, NonceProvider} = createContentSecurityPolicy({
     shop: {
       checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
@@ -31,12 +42,22 @@ export default async function handleRequest(
     </NonceProvider>,
     {
       nonce,
-      signal: request.signal,
+      signal: abortController.signal,
       onError(error) {
         console.error(error);
         responseStatusCode = 500;
       },
     },
+  );
+
+  // Identity transform to detect when the stream finishes naturally,
+  // preventing the abort handler from double-closing it.
+  const transformedBody = body.pipeThrough(
+    new TransformStream({
+      flush() {
+        isStreamClosing = true;
+      },
+    }),
   );
 
   if (isbot(request.headers.get('user-agent'))) {
@@ -46,7 +67,7 @@ export default async function handleRequest(
   responseHeaders.set('Content-Type', 'text/html');
   responseHeaders.set('Content-Security-Policy', header);
 
-  return new Response(body, {
+  return new Response(transformedBody, {
     headers: responseHeaders,
     status: responseStatusCode,
   });
