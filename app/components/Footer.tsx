@@ -1,4 +1,4 @@
-import {Suspense} from 'react';
+import {Suspense, useMemo} from 'react';
 import {Await, NavLink, Link} from 'react-router';
 import {AtSignIcon, CameraIcon, CirclePlayIcon} from 'lucide-react';
 import type {FooterQuery, HeaderQuery} from 'storefrontapi.generated';
@@ -25,6 +25,9 @@ export function Footer({
   publicStoreDomain,
 }: FooterProps) {
   const primaryDomainUrl = header.shop.primaryDomain?.url;
+  // SSR-safe: generate year once at component mount. Prevents hydration mismatch
+  // from new Date() differing between server render and client hydration.
+  const year = useMemo(() => new Date().getFullYear(), []);
 
   return (
     <footer className="mt-auto border-t border-border bg-background">
@@ -71,7 +74,7 @@ export function Footer({
 
         <div className="flex flex-col items-center justify-between gap-4 text-sm text-muted-foreground sm:flex-row">
           <p>
-            &copy; {new Date().getFullYear()} {header.shop.name || BRAND.name}.
+            &copy; {year} {header.shop.name || BRAND.name}.
             All rights reserved.
           </p>
           <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Legal">

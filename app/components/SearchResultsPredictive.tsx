@@ -250,7 +250,8 @@ function SearchResultsPredictiveProducts({
                 <div className="flex flex-col">
                   <span className="text-sm">{product.title}</span>
                   <small className="text-muted-foreground">
-                    {price && <Money data={price} />}
+                    {/* withoutTrailingZeros prevents locale mismatch between SSR and client. */}
+                    {price && <Money data={price} withoutTrailingZeros />}
                   </small>
                 </div>
               </Link>

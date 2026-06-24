@@ -144,7 +144,8 @@ function SearchResultsProducts({
                     {product.title}
                   </p>
                   <small className="text-sm text-muted-foreground">
-                    {price && <Money data={price} />}
+                    {/* withoutTrailingZeros prevents locale mismatch between SSR and client. */}
+                    {price && <Money data={price} withoutTrailingZeros />}
                   </small>
                 </div>
               </Link>

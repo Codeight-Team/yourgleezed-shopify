@@ -44,14 +44,16 @@ export function Price({
     >
       {price ? (
         <span className={cn(onSale && 'text-destructive')}>
-          <Money data={price} />
+          {/* withoutTrailingZeros prevents locale mismatch between SSR (id-ID) and
+          client hydration (en) which would cause "Text content did not match". */}
+          <Money data={price} withoutTrailingZeros />
         </span>
       ) : (
         <span>&nbsp;</span>
       )}
       {onSale && (
         <s className="font-normal text-muted-foreground">
-          <Money data={compareAtPrice} />
+          <Money data={compareAtPrice} withoutTrailingZeros />
         </s>
       )}
     </div>

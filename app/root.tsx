@@ -1,4 +1,4 @@
-import {Analytics, getShopAnalytics, useNonce} from '@shopify/hydrogen';
+import {Analytics, getShopAnalytics} from '@shopify/hydrogen';
 import {
   Outlet,
   useRouteError,
@@ -98,7 +98,7 @@ export async function loader(args: Route.LoaderArgs) {
       publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
     }),
     consent: {
-      checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
+      checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN ?? '',
       storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
       withPrivacyBanner: false,
       // localize the privacy banner
@@ -157,7 +157,6 @@ function loadDeferredData({context}: Route.LoaderArgs) {
 }
 
 export function Layout({children}: {children?: React.ReactNode}) {
-  const nonce = useNonce();
   const data = useRouteLoaderData<RootLoader>('root');
   const lang = data?.language ? data.language.toLowerCase() : 'en';
 
@@ -184,8 +183,8 @@ export function Layout({children}: {children?: React.ReactNode}) {
           Skip to content
         </a>
         {children}
-        <ScrollRestoration nonce={nonce} />
-        <Scripts nonce={nonce} />
+        <ScrollRestoration />
+        <Scripts />
       </body>
     </html>
   );
@@ -193,22 +192,16 @@ export function Layout({children}: {children?: React.ReactNode}) {
 
 export default function App() {
   const data = useRouteLoaderData<RootLoader>('root');
-  const nonce = useNonce();
 
   if (!data) {
     return <Outlet />;
   }
 
   return (
-    <Analytics.Provider
-      cart={data.cart}
-      shop={data.shop}
-      consent={data.consent}
-    >
+    <Analytics.Provider cart={data.cart} shop={data.shop} consent={data.consent}>
       {data.siteUrl && (
         <script
           type="application/ld+json"
-          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: JSON.stringify([
               organizationJsonLd(data.siteUrl),

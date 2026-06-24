@@ -42,7 +42,9 @@ export function CartSummary({cart, layout}: CartSummaryProps) {
         <dt className="text-muted-foreground">Subtotal</dt>
         <dd className="font-medium tabular-nums">
           {cart?.cost?.subtotalAmount?.amount ? (
-            <Money data={cart.cost.subtotalAmount} />
+            /* withoutTrailingZeros prevents locale mismatch between SSR (id-ID) and
+            client hydration (en) which would cause "Text content did not match". */
+            <Money data={cart.cost.subtotalAmount} withoutTrailingZeros />
           ) : (
             '—'
           )}
@@ -236,7 +238,7 @@ function CartGiftCard({
                 }}
               >
                 <code>***{giftCard.lastCharacters}</code>
-                <Money data={giftCard.amountUsed} />
+                <Money data={giftCard.amountUsed} withoutTrailingZeros />
               </RemoveGiftCardForm>
             </dd>
           ))}
